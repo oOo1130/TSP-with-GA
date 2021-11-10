@@ -1,9 +1,20 @@
 from TSP import *
 from libs.GeneticAlgorithm import GeneticAlgorithm
+import urllib.request
 
 
 def main():
     poland = Country()
+   
+    
+    # webUrl = urllib.request.urlopen('https://people.sc.fsu.edu/~jburkardt/datasets/cities/co04_dist.txt')
+    # # print( "result: "+str(webUrl.getcode()))
+    # data = webUrl.read()
+    # split = str(data).pop()
+   
+    # print(split)
+    # for i in data:
+    #     print(i)
 
     poland.add([
         City('Gorlice', (49.655299, 21.159769)),
@@ -21,13 +32,13 @@ def main():
     ])
     print('Cities:', end=' ')
     print(*(city for city in poland.cities), sep=', ')
-    # ga = GeneticAlgorithm(100, mutation_rate=0.5, ptype=Route, args=(poland.cities,))
-    # ga.run(seconds=10)
-    # fittest = ga.alltime_best
-    # best_fitness = fittest.fitness
-    # print('Best route:', fittest)
-    # print('Best fitness:', best_fitness)
-    # print('Generations:', ga.generation)
+    ga = GeneticAlgorithm(100, mutation_rate=0.5, ptype=Route, args=(poland.cities,))
+    ga.run(seconds=10)
+    fittest = ga.alltime_best
+    best_fitness = fittest.fitness
+    print('Best route:', fittest)
+    print('Best fitness:', best_fitness)
+    print('Generations:', ga.generation)
 
 
 if __name__ == '__main__':

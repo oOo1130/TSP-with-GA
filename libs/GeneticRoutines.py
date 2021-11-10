@@ -8,6 +8,7 @@ def selection(pop):
     while rand > 0:
         i += 1
         rand -= pop[i].chance
+        # print("selection:" + str(pop[i].chance))
     return pop[i]
 
 
@@ -23,8 +24,8 @@ def crossover(chromosome1, chromosome2):
     end = randint(0, len(chromosome1.genes))
     start = randint(0, end)
     section = chromosome1.genes[start:end]
-    offspring_genes = list(gene if gene not in section else None for gene in chromosome2.genes)
-    g = (x for x in section)
+    offspring_genes = list(gene if gene not in section else None for gene in chromosome2.genes) # append gene in offSpring_genes according to contition.
+    g = (x for x in section) # append x in g
     for i, x in enumerate(offspring_genes):
         if x is None:
             offspring_genes[i] = next(g)

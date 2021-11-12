@@ -7,7 +7,8 @@ import numpy as np
 import random
 import math, sys
 
-
+def is_empty(a):
+    return len(a) == 0
 
 class City:
     def __init__(self, x, y, index):
@@ -23,6 +24,7 @@ def read_cities():
         lines = handle.readlines()
         for line in lines:
             x, y = map(float, line.split())
+            
             cities.append(City(x, y,idx))
             idx = idx + 1
     return cities
@@ -41,10 +43,11 @@ class Fitness:
 
     def path_cost(self):
         if self.distance == 0:
-            self.distance = sum([city.distance(self.route[index]) for index, city in enumerate(self.route)])
+            self.distance = sum([city.distance(self.route[index-1]) for index, city in enumerate(self.route)])
         return self.distance
 
     def path_fitness(self):
+        
         if self.fitness == 0:
             self.fitness = 1 / float(self.path_cost())
         return self.fitness
@@ -61,6 +64,9 @@ class GeneticDPForTSP:
         self.greedy_seed = greedy_seed
 
         self.population = self.initial_population()
+        # cityarray = [[(city.cityindex) for city in chrom] for chrom in self.population]
+        # print(cityarray)
+        
         self.distance_matrix = [[x.distance(y) for y in cities] for x in cities]
         self.ranked_population = None
         self.pvalue = pvalue
@@ -74,13 +80,16 @@ class GeneticDPForTSP:
         return 1 / self.ranked_population[0][1]
 
     def random_route(self):
-
-        return random.sample(self.cities, len(self.cities))
-
+        temp_cities = [self.cities[index] for index in range(1, len(self.cities))]
+        random_cities = random.sample(temp_cities, len(temp_cities))
+        first_city = [self.cities[0]]
+        
+        return [*first_city,*random_cities]
     def initial_population(self):
         p1 = [self.random_route() for _ in range(self.population_size - self.greedy_seed)]
         greedy_population = [greedy_route(start_index % len(self.cities), self.cities)
                              for start_index in range(self.greedy_seed)]
+
         return [*p1, *greedy_population]
 
     def rank_population(self):
@@ -98,8 +107,10 @@ class GeneticDPForTSP:
                 ivalue = sigma1[idx]
                 jvalue = sigma1[jdx]
                 if(sigma2.index(ivalue) <= sigma2.index(jvalue)):
-                    DValue.append((idx, jdx))
-        frozen =  set(frozenset(pair)  for pair in DValue)  
+                    DValue.append(((ivalue, jvalue)))
+        
+        frozen =  set((pair)  for pair in DValue)  
+        # print(frozen)
         return frozen 
 
     # 
@@ -129,28 +140,39 @@ class GeneticDPForTSP:
         cities_a = {(frozenset([0, idx + 1]), idx + 1): (dist, [0, idx + 1]) for idx, dist in
                     enumerate(distance_matrix[0][1:])}
         
-        cities = self.cities        
-        #crossover by DP
+        cities = self.cities     
+         
+               
+        # crossover by DP
         for m in range(2, len(cities)):
             cities_b = {}
-            for cities_set in [frozenset(C) | {0} for C in itertools.combinations(range(1, len(cities)), m)]:
+            for cities_set in [frozenset(C) | {0} for C in itertools.combinations(range(1, len(cities)), m)] :
+                # pairset  = set( (pair)  for pair in itertools.combinations(cities_set,2) )
+                # pairset2  = set( (pair)  for pair in itertools.combinations(cities_set,2) if (pair[0],pair[1]) in DSet or (pair[1],pair[0]) in DSet  )
                 
-                pairset  = set( frozenset(pair)  for pair in itertools.combinations(cities_set,2))
+                # # pairset  = set( (pair)  for pair in itertools.combinations(cities_set,2) if pair[0] < pair[1])
+                # # pairset_temp = set( (pair[1], pair[0])  for pair in itertools.combinations(cities_set,2) if pair[0] >= pair[1])
+                # # if(is_empty(pairset_temp) == False):
+                # #     pairset= set.union(pairset,pairset_temp)
                 
-                if(pairset.issubset(DSet) == False): 
-                    continue
+                # if(pairset.issubset(pairset2) == False): 
+                #     continue
+                # print(pairset)
                 for i in cities_set - {0}:
                     cities_b[(cities_set, i)] = min([(cities_a[(cities_set - {i}, j)][0] + distance_matrix[j][i],
-                                                    cities_a[(cities_set - {i}, j)][1] + [i])
-                                                    for j in cities_set if j != 0 and j != i])
+                                                  cities_a[(cities_set - {i}, j)][1] + [i])
+                                                 for j in cities_set if j != 0 and j != i])
+            
             cities_a = cities_b
-
+            # print(cities_b, "cities_b")
+        # print(cities_a)
         resultarr = [(cities_a[d][0] + distance_matrix[0][d[1]], cities_a[d][1]) for d in iter(cities_a)]
         if(len(resultarr) == 0):
             return chromosome1,chromosome2
         res = min(resultarr)
         sol = [cities[gi] for gi in res[1]]
-        
+        sol_path = [cities[gi].cityindex for gi in res[1]]
+        print(sol_path)
         return self.selection(chromosome1,chromosome2,sol)
 
 
@@ -161,6 +183,7 @@ class GeneticDPForTSP:
 
 
     def next_generation(self):
+        
         self.rank_population()
         
         
@@ -168,15 +191,17 @@ class GeneticDPForTSP:
     def run(self):
         if self.plot_progress:
             plt.ion()
-        
+        self.rank_population()
         for ind in range(0, self.iterations):
-            self.next_generation()
             self.crossoverByDP()
+            self.next_generation()
             self.progress.append(self.best_distance())
-            if self.plot_progress and ind % 10 == 0:
-                self.plot()
-            elif not self.plot_progress and ind % 10 == 0:
-                print(self.best_distance())
+            self.plot()
+            # print(self.best_distance())
+            # if self.plot_progress and ind % 10 == 0:
+            #     self.plot()
+            # elif not self.plot_progress and ind % 10 == 0:
+            #     print(self.best_distance())
 
     def plot(self):
         print(self.best_distance())
@@ -192,16 +217,16 @@ class GeneticDPForTSP:
             y_list.append(city.y)
         x_list.append(self.best_chromosome()[0].x)
         y_list.append(self.best_chromosome()[0].y)
-        # fig = plt.figure(1)
-        # fig.clear()
-        # fig.suptitle('genetic algorithm TSP')
-        # plt.plot(x_list, y_list, 'ro')
-        # plt.plot(x_list, y_list, 'g')
+        fig = plt.figure(1)
+        fig.clear()
+        fig.suptitle('genetic algorithm TSP')
+        plt.plot(x_list, y_list, 'ro')
+        plt.plot(x_list, y_list, 'g')
 
-        # if self.plot_progress:
-        #     plt.draw()
-        #     plt.pause(0.05)
-        # plt.show()
+        if self.plot_progress:
+            plt.draw()
+            plt.pause(0.05)
+        plt.show()
 
 
 def greedy_route(start_index, cities):
@@ -275,5 +300,5 @@ if __name__ == '__main__':
     genetic_algorithm = GeneticDPForTSP(cities=cities, iterations=100, population_size=20,
                                          greedy_seed=1, plot_progress=True)
     genetic_algorithm.run()
-    print(genetic_algorithm.best_distance())
+    # print(genetic_algorithm.best_distance())
     

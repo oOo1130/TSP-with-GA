@@ -117,7 +117,7 @@ class GeneticAlgorithm:
         children = self.population[:self.elites_num]
         for i in range(0, length):
             child = self.produce_child(self.population[i],
-                    self.population[(i + random.randint(1, self.elites_num)) % length])
+                        self.population[(i + random.randint(1, self.elites_num)) % length])
             children.append(child)
         return children
 
